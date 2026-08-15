@@ -840,6 +840,20 @@ pub enum TabBarPositionConfig {
     Bottom,
 }
 
+/// Decorative caps drawn at the left/right edge of each tab, so the tab fill
+/// curves into the bar background instead of ending in a hard square.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize, Serialize, Default)]
+#[serde(rename_all = "snake_case")]
+pub enum TabCapsConfig {
+    /// No caps; tabs are plain filled rectangles (default).
+    #[default]
+    None,
+    /// Powerline half-circle caps (U+E0B6/U+E0B4). Requires a Nerd Font.
+    Powerline,
+    /// Half-block caps (U+2590/U+258C). Renders in any monospace font.
+    HalfBlock,
+}
+
 #[derive(Debug, Deserialize)]
 #[serde(default)]
 pub struct UiConfig {
@@ -879,6 +893,8 @@ pub struct UiConfig {
     /// Draw a border around the whole Herdr app (sidebar, tab bar, and panes),
     /// with rounded corners that echo a rounded terminal window. Default: false.
     pub app_border: bool,
+    /// Decorative caps at each tab's edges. Default: none.
+    pub tab_caps: TabCapsConfig,
     /// Draw interactive scrollbars beside terminal panes. Default: true.
     pub pane_scrollbars: bool,
     /// Keep split panes visually separated instead of sharing divider borders. Default: true.
@@ -1108,6 +1124,7 @@ impl Default for UiConfig {
             pane_borders: true,
             pane_outer_borders: true,
             app_border: false,
+            tab_caps: TabCapsConfig::None,
             pane_scrollbars: true,
             pane_gaps: true,
             show_agent_labels_on_pane_borders: false,

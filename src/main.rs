@@ -323,6 +323,11 @@ const DEFAULT_CONFIG: &str = r##"# herdr configuration
 # tab row no longer sits flush against the window's curve.
 # app_border = false
 
+# Decorative caps at the left/right edge of each tab so the fill curves into
+# the bar instead of ending square. "none" (default), "powerline" (U+E0B6/E0B4
+# half-circles, needs a Nerd Font), or "half_block" (U+2590/258C, any font).
+# tab_caps = "none"
+
 # Draw interactive scrollbars beside terminal panes.
 # Set false to reclaim the scrollbar column and keep it out of terminal-native selections.
 # pane_scrollbars = true

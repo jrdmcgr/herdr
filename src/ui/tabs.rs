@@ -390,6 +390,8 @@ pub(super) fn render_tab_bar(app: &AppState, frame: &mut Frame, area: Rect) {
             continue;
         }
         let active = idx == ws.active_tab;
+        // The tab's fill color, reused to tint the edge caps below.
+        let tab_bg = if active { p.accent } else { p.surface0 };
         let style = if active {
             let base = Style::default().fg(panel_contrast_fg(p)).bg(p.accent);
             if tab.is_auto_named() {
@@ -416,6 +418,30 @@ pub(super) fn render_tab_bar(app: &AppState, frame: &mut Frame, area: Rect) {
             right = padding - left
         );
         frame.render_widget(Paragraph::new(text).style(style), rect);
+
+        // Edge caps: recolor the first/last cell so the tab fill curves into the
+        // bar. The glyph is drawn in the tab color over the bar background, so
+        // the tab appears to round off instead of ending in a hard square.
+        if rect.width >= 2 {
+            let caps = match app.tab_caps {
+                crate::config::TabCapsConfig::None => None,
+                // U+E0B6 / U+E0B4 powerline half-circles (needs a Nerd Font).
+                crate::config::TabCapsConfig::Powerline => Some(("\u{e0b6}", "\u{e0b4}")),
+                // U+2590 (right half) / U+258C (left half) block, any font.
+                crate::config::TabCapsConfig::HalfBlock => Some(("\u{2590}", "\u{258c}")),
+            };
+            if let Some((left_cap, right_cap)) = caps {
+                let cap_style = Style::default().fg(tab_bg).bg(p.panel_bg);
+                let right_x = rect.x + rect.width - 1;
+                let buf = frame.buffer_mut();
+                buf[(rect.x, rect.y)]
+                    .set_symbol(left_cap)
+                    .set_style(cap_style);
+                buf[(right_x, rect.y)]
+                    .set_symbol(right_cap)
+                    .set_style(cap_style);
+            }
+        }
     }
 
     if let Some(crate::app::state::DragState {
