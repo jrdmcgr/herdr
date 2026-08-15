@@ -876,6 +876,9 @@ pub struct UiConfig {
     pub pane_borders: bool,
     /// Draw borders along the outside edge of the pane area. Default: true.
     pub pane_outer_borders: bool,
+    /// Draw a border around the whole Herdr app (sidebar, tab bar, and panes),
+    /// with rounded corners that echo a rounded terminal window. Default: false.
+    pub app_border: bool,
     /// Draw interactive scrollbars beside terminal panes. Default: true.
     pub pane_scrollbars: bool,
     /// Keep split panes visually separated instead of sharing divider borders. Default: true.
@@ -1104,6 +1107,7 @@ impl Default for UiConfig {
             prompt_new_workspace_name: false,
             pane_borders: true,
             pane_outer_borders: true,
+            app_border: false,
             pane_scrollbars: true,
             pane_gaps: true,
             show_agent_labels_on_pane_borders: false,

@@ -1,7 +1,8 @@
 use ratatui::{
-    layout::{Constraint, Layout, Rect},
+    layout::{Constraint, Layout, Margin, Rect},
     style::{Modifier, Style},
     text::Span,
+    widgets::{Block, BorderType, Borders},
     Frame,
 };
 
@@ -224,6 +225,15 @@ fn compute_view_internal(
         return;
     }
 
+    // Reserve a one-cell frame around the whole app for the optional app border.
+    // Everything below lays out within the inset area; the border itself is
+    // drawn over the reserved frame in `render_with_runtime_registry`.
+    let area = if app.app_border {
+        area.inner(Margin::new(1, 1))
+    } else {
+        area
+    };
+
     let sidebar_w = if app.sidebar_collapsed {
         match app.sidebar_collapsed_mode {
             crate::config::SidebarCollapsedModeConfig::Compact => COLLAPSED_WIDTH,
@@ -400,6 +410,18 @@ pub fn render_with_runtime_registry(
 ) {
     let tab_bar_area = app.view.tab_bar_rect;
     let terminal_area = app.view.terminal_area;
+
+    // Rounded frame around the whole app, echoing a rounded terminal window.
+    // Drawn first so chrome (computed within the inset area) sits inside it.
+    if app.app_border {
+        frame.render_widget(
+            Block::default()
+                .borders(Borders::ALL)
+                .border_type(BorderType::Rounded)
+                .border_style(Style::default().fg(app.palette.accent)),
+            frame.area(),
+        );
+    }
 
     render_navigation_chrome(app, terminal_runtimes, frame);
     if app.view.layout != ViewLayout::Mobile {

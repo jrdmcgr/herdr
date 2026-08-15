@@ -318,6 +318,11 @@ const DEFAULT_CONFIG: &str = r##"# herdr configuration
 # Disable for tmux-style internal splitters without an outside frame.
 # pane_outer_borders = true
 
+# Draw a rounded border around the whole Herdr app (sidebar, tab bar, and
+# panes). Its rounded corners echo a rounded terminal window so the square
+# tab row no longer sits flush against the window's curve.
+# app_border = false
+
 # Draw interactive scrollbars beside terminal panes.
 # Set false to reclaim the scrollbar column and keep it out of terminal-native selections.
 # pane_scrollbars = true
