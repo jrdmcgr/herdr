@@ -1,0 +1,68 @@
+# Herdr.app terminal configuration — self-contained, no config-file include.
+#
+# This app runs inside an isolated XDG_CONFIG_HOME (see install.sh), so it
+# never inherits or clobbers ~/.config/ghostty/config or any other profile.
+# Everything this window needs is inlined below rather than included, because
+# an include would pull in a path (and possibly a `command`) from outside the
+# bundle, breaking reproducibility on another machine.
+#
+# @HERDR_BIN@ is substituted by install.sh with the absolute, stable path to
+# this app's own bundled herdr binary
+# ($HOME/Applications/Herdr.app/Contents/Resources/herdr) — stable because it
+# points at the canonical app location, which install.sh swaps atomically
+# behind that fixed path on every rebuild/rollback.
+
+theme = Monokai Classic
+shell-integration = zsh
+font-size = 18
+adjust-cell-height = 5
+custom-shader = cursor_warp.glsl
+cursor-style = bar
+cursor-style-blink = true
+keybind = shift+enter=text:\n
+
+# Hide the native macOS titlebar for a cleaner herdr-focused UI. Window can
+# still be dragged with Option+Click on the frame.
+macos-titlebar-style = hidden
+
+# With the titlebar hidden, herdr's tab row sits flush against the top-left
+# corner. Pad only those two edges (x = left,right; y = top,bottom).
+window-padding-x = 10,0
+window-padding-y = 10,0
+
+# Launch this app's own bundled herdr binary — not a released binary off
+# PATH, and not through a shell, so no login-shell PATH dance is needed.
+#
+# -u XDG_CONFIG_HOME: Ghostty's own isolated XDG_CONFIG_HOME (set via
+# LSEnvironment, see install.sh) would otherwise be inherited by herdr too,
+# pointing it at an isolated (empty) herdr config/session instead of your
+# real ~/.config/herdr — unset it so herdr sees your normal environment and
+# this app is a real daily driver, not a sandboxed dev copy.
+#
+# -u HERDR_ENV/HERDR_PANE_ID/HERDR_TAB_ID/HERDR_WORKSPACE_ID: strips herdr's
+# "I'm inside a pane" markers so launching this app from a terminal that is
+# itself inside herdr doesn't false-trip nested-session detection. Harmless
+# from the Dock, where none of these are set.
+command = env -u XDG_CONFIG_HOME -u HERDR_ENV -u HERDR_PANE_ID -u HERDR_TAB_ID -u HERDR_WORKSPACE_ID @HERDR_BIN@
+
+# --- Hand Cmd (super) to herdr ---
+# `unbind` removes Ghostty's own action AND lets the chord fall through to
+# the running program (herdr) via the Kitty keyboard protocol. herdr binds
+# these itself (see the [keys] block install.sh merges into
+# ~/.config/herdr/config.toml).
+# super+t was new_tab        -> forwarded to herdr (new_tab)
+# super+n was new_window     -> forwarded to herdr (new_workspace)
+# super+w was close_surface  -> forwarded to herdr (close_pane)
+keybind = super+t=unbind
+keybind = super+n=unbind
+keybind = super+w=unbind
+# cmd+shift+[ / ] -> forwarded to herdr (previous_tab/next_tab). Ghostty's own
+# default binds these as the literal chord below, not the bracket_left/right
+# physical-key name — match that literal form or unbind silently no-ops.
+keybind = cmd+shift+[=unbind
+keybind = cmd+shift+]=unbind
+# cmd+ctrl+j/k aren't Ghostty defaults, but unbind them so a future Ghostty
+# default can't grab them; unbound super chords fall through to herdr, which
+# binds them to previous_workspace/next_workspace.
+keybind = super+ctrl+j=unbind
+keybind = super+ctrl+k=unbind

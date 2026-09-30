@@ -1,0 +1,35 @@
+# Reference config additions for Herdr.app — not applied automatically.
+#
+# install.sh prints this file at the end of a build as a reminder; it does
+# not touch your real ~/.config/herdr/config.toml itself. That file is your
+# hand-curated, git-tracked dotfiles config (dotfiles/src/.config/herdr/
+# config.toml) with its own [keys] and [ui] tables already — an automated
+# merge risks a second, invalid [ui] table or clobbering settings you set by
+# hand. Add the lines below yourself, skipping anything already covered
+# (new_tab/new_workspace/previous_tab/next_tab are already bound there).
+#
+# These pair with the `unbind` lines in herdr.ghostty.in — set both sides or
+# the chord never reaches herdr.
+# NOTE: [ui] app_border and tab_caps are fork-only keys (branches
+# feat/app-border, feat/tab-caps); the released herdr ignores them.
+# If dotfiles/src/.config/herdr/config.toml already has a [ui] table (it
+# does), merge these two keys into it rather than adding a second [ui].
+
+[keys]
+# Cmd+W closes the focused pane (and the tab when it's the last pane) — the
+# same action as the default leader+x (prefix+x). herdr allows one chord per
+# action, so this replaces prefix+x rather than adding to it.
+close_pane = "cmd+w"
+
+# Cmd+Ctrl+J/K move between spaces (workspaces).
+next_workspace = "cmd+ctrl+j"
+previous_workspace = "cmd+ctrl+k"
+
+[ui]
+# Rounded frame around the whole herdr UI, echoing the macOS window corners.
+# Fork-only key (branch feat/app-border) — the released herdr ignores it.
+app_border = true
+
+# Edge caps so tabs curve into the bar. Fork-only key (branch feat/tab-caps).
+# "half_block" (▐/▌) renders in any font; "powerline" needs a Nerd Font.
+tab_caps = "half_block"
