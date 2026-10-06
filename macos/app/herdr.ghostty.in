@@ -34,22 +34,38 @@ window-padding-y = 10,0
 # PATH, and not through a shell, so no login-shell PATH dance is needed.
 #
 # -u XDG_CONFIG_HOME: Ghostty's own isolated XDG_CONFIG_HOME (set via
-# LSEnvironment, see install.sh) would otherwise be inherited by herdr too,
-# pointing it at an isolated (empty) herdr config/session instead of your
-# real ~/.config/herdr — unset it so herdr sees your normal environment and
-# this app is a real daily driver, not a sandboxed dev copy.
+# LSEnvironment, see install.sh) would otherwise be inherited by herdr too;
+# unset it so herdr reads your real ~/.config/herdr/config.toml ([keys],
+# [ui], [theme], ...) instead of an isolated empty one.
+#
+# HERDR_SESSION=app: the bundled binary is a different build (possibly a
+# different protocol version) than whatever release is already running as
+# your default herdr server, and an incompatible client talking to that
+# server doesn't work — herdr's handshake correctly refuses it. A named
+# session gets its own socket + session state under
+# ~/.config/herdr/sessions/app/ (still reading the *same* top-level
+# config.toml), so this app never touches your default session's server,
+# panes, or agents. Equivalent to: herdr --session app. Drop this once this
+# build is your only/default herdr.
+#
+# -u HERDR_SOCKET_PATH/HERDR_CLIENT_SOCKET_PATH: both take precedence over
+# HERDR_SESSION (herdr checks them first), so if this app is ever launched
+# from a shell that's already inside a herdr pane (which sets
+# HERDR_SOCKET_PATH in its environment), an inherited value would silently
+# override the session isolation above and point this app straight at your
+# default session's socket, the opposite of what HERDR_SESSION=app is for.
 #
 # -u HERDR_ENV/HERDR_PANE_ID/HERDR_TAB_ID/HERDR_WORKSPACE_ID: strips herdr's
 # "I'm inside a pane" markers so launching this app from a terminal that is
 # itself inside herdr doesn't false-trip nested-session detection. Harmless
 # from the Dock, where none of these are set.
-command = env -u XDG_CONFIG_HOME -u HERDR_ENV -u HERDR_PANE_ID -u HERDR_TAB_ID -u HERDR_WORKSPACE_ID @HERDR_BIN@
+command = env -u XDG_CONFIG_HOME -u HERDR_SOCKET_PATH -u HERDR_CLIENT_SOCKET_PATH -u HERDR_ENV -u HERDR_PANE_ID -u HERDR_TAB_ID -u HERDR_WORKSPACE_ID HERDR_SESSION=app @HERDR_BIN@
 
 # --- Hand Cmd (super) to herdr ---
 # `unbind` removes Ghostty's own action AND lets the chord fall through to
 # the running program (herdr) via the Kitty keyboard protocol. herdr binds
-# these itself (see the [keys] block install.sh merges into
-# ~/.config/herdr/config.toml).
+# these itself (see app/herdr-keys.toml, which install.sh prints as a
+# reminder for ~/.config/herdr/config.toml rather than merging automatically).
 # super+t was new_tab        -> forwarded to herdr (new_tab)
 # super+n was new_window     -> forwarded to herdr (new_workspace)
 # super+w was close_surface  -> forwarded to herdr (close_pane)
