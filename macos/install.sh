@@ -132,8 +132,12 @@ verify_app() {
 		printf 'Herdr app bundle is missing: %s\n' "$app" >&2
 		return 1
 	}
-	[[ -x "$app/Contents/MacOS/ghostty" ]] || {
-		printf 'Herdr terminal executable is missing: %s\n' "$app/Contents/MacOS/ghostty" >&2
+	[[ -x "$app/Contents/MacOS/ghostty" && -x "$app/Contents/MacOS/launch" ]] || {
+		printf 'Herdr terminal or launcher is missing: %s\n' "$app" >&2
+		return 1
+	}
+	strings "$app/Contents/MacOS/launch" | grep -Fq -- '--config-file=%s/../Resources/herdr.ghostty' || {
+		printf 'Herdr launcher does not load the isolated Ghostty config.\n' >&2
 		return 1
 	}
 	[[ -x "$app/Contents/Resources/herdr" ]] || {
@@ -156,8 +160,8 @@ verify_app() {
 		printf 'Unexpected Herdr bundle identifier.\n' >&2
 		return 1
 	}
-	[[ "$(/usr/libexec/PlistBuddy -c 'Print :CFBundleExecutable' "$app/Contents/Info.plist")" == ghostty ]] || {
-		printf 'Herdr must preserve Ghostty as its native bundle executable.\n' >&2
+	[[ "$(/usr/libexec/PlistBuddy -c 'Print :CFBundleExecutable' "$app/Contents/Info.plist")" == launch ]] || {
+		printf 'Herdr must start through its explicit-config launcher.\n' >&2
 		return 1
 	}
 	[[ "$(/usr/libexec/PlistBuddy -c 'Print :LSEnvironment:XDG_CONFIG_HOME' "$app/Contents/Info.plist")" == "$ghostty_xdg_root" ]] || {
@@ -454,6 +458,10 @@ build_app() {
 	stage_dir="$(mktemp -d "$release_root/.build.XXXXXX")"
 	local app="$stage_dir/$app_name"
 	ditto --rsrc --extattr "$ghostty_app" "$app"
+	# LaunchServices ignored LSEnvironment (plain shell), then refused a
+	# shell-script CFBundleExecutable. A native entry point explicitly passes
+	# this bundle's config to the real Ghostty binary before exec.
+	clang -O2 -Wall -Wextra -o "$app/Contents/MacOS/launch" "$definition_dir/launcher.c"
 
 	cp "$herdr_bin" "$app/Contents/Resources/herdr"
 	chmod +x "$app/Contents/Resources/herdr"
@@ -471,7 +479,7 @@ build_app() {
 	set_plist "$plist" CFBundleDisplayName Herdr
 	set_plist "$plist" CFBundleName Herdr
 	set_plist "$plist" CFBundleIdentifier "$herdr_bundle_id"
-	set_plist "$plist" CFBundleExecutable ghostty
+	set_plist "$plist" CFBundleExecutable launch
 	set_plist "$plist" CFBundleIconFile Herdr.icns
 	set_plist "$plist" LSEnvironment:XDG_CONFIG_HOME "$ghostty_xdg_root"
 	set_plist "$plist" NSHumanReadableCopyright "Terminal implementation: Ghostty ${ghostty_version}"
@@ -484,14 +492,20 @@ build_app() {
 	codesign --force --deep --sign - "$app"
 	verify_app "$app"
 
-	local git_sha dirty='' release_id
-	git_sha="$(git -C "$repo_root" rev-parse --short=12 HEAD)"
-	git -C "$repo_root" diff --quiet -- . ':!macos' || dirty='-dirty'
-	release_id="ghostty-${ghostty_version}-herdr-${git_sha}${dirty}"
-	local release_dir="$release_root/$release_id"
-	rm -rf "$release_dir"
-	mv "$stage_dir" "$release_dir"
-	stage_dir=''
+	# Include the actual built artifacts, not just HEAD: repeated builds or
+	# edits to macos/ must never delete the currently active rollback release.
+	local release_id release_dir digest
+	digest="$(shasum -a 256 "$app/Contents/Resources/herdr" \
+		"$app/Contents/Resources/herdr.ghostty" \
+		"$app/Contents/MacOS/launch" | shasum -a 256 | cut -c1-12)"
+	release_id="ghostty-${ghostty_version}-herdr-${digest}"
+	release_dir="$release_root/$release_id"
+	if [[ -e "$release_dir" ]]; then
+		verify_app "$release_dir/$app_name"
+	else
+		mv "$stage_dir" "$release_dir"
+		stage_dir=''
+	fi
 
 	activate "$release_dir/$app_name"
 	print_herdr_keys_reminder

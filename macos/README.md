@@ -41,14 +41,15 @@ own long-lived constants, not per-version).
 ## What it does and doesn't touch
 
 - **Isolates Ghostty's own config** under `~/Library/Application Support/
-  Herdr/installer/xdg`, generated from `app/herdr.ghostty.in` — so this app's
-  settings never depend on, or leak into, `~/.config/ghostty/` or any other
-  profile.
-- **Does not isolate herdr's config.** The bundled binary has
+  Herdr/installer/xdg`, generated from `app/herdr.ghostty.in`. Its native
+  launch path explicitly passes `--config-file` to Ghostty: macOS did not
+  reliably apply `LSEnvironment` when launching the bundle, leaving a plain
+  shell instead of herdr. This avoids depending on `~/.config/ghostty/`.
+- **Shares herdr's configuration, not its server.** The bundled binary has
   `XDG_CONFIG_HOME` explicitly unset before exec, so it reads your real
-  `~/.config/herdr/config.toml` (`dotfiles/src/.config/herdr/`) and talks to
-  your normal herdr server/session state. This is meant to be your daily
-  driver, not a sandboxed dev copy.
+  `~/.config/herdr/config.toml`. `HERDR_SESSION=app` gives it separate socket,
+  panes and saved state under `~/.config/herdr/sessions/app/`, leaving the
+  default server and its live sessions untouched while testing.
 - **Never edits your herdr config.** `app/herdr-keys.toml` documents the
   `[keys]`/`[ui]` additions this app's Ghostty-side keybinds expect (and the
   fork-only `app_border`/`tab_caps` keys) — `install.sh` prints it after a
